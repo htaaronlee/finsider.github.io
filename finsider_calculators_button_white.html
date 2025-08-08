@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FINSIDER 理財計算工具</title>
+  <!-- FINSIDER inspired styling -->
+  <style>
+    :root {
+      /* Brand colours */
+      --primary-color: #45D3C7;
+      --secondary-color: #2EB39C;
+      --card-bg: rgba(255, 255, 255, 0.12);
+      --card-border: rgba(255, 255, 255, 0.25);
+      --text-light: #ffffff;
+      --text-dark: #222222;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+        Arial, sans-serif;
+      line-height: 1.5;
+      color: var(--text-light);
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      min-height: 100vh;
+      padding-bottom: 3rem;
+    }
+
+    header {
+      text-align: center;
+      padding: 2rem 1rem 1rem;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.25rem;
+      font-weight: 600;
+    }
+
+    header p {
+      margin-top: 0.5rem;
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    section.calculator-section {
+      margin-top: 3rem;
+    }
+
+    section.calculator-section h2 {
+      font-size: 1.75rem;
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+    }
+
+    section.calculator-section p.subtitle {
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .calculator-card {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    .calculator-card .inputs {
+      flex: 1;
+      min-width: 260px;
+    }
+
+    .calculator-card .results {
+      flex: 1;
+      min-width: 260px;
+      text-align: center;
+    }
+
+    .inputs label {
+      display: block;
+      margin: 0.5rem 0 0.25rem;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .inputs input[type="number"],
+    .inputs input[type="text"] {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--text-light);
+      font-size: 1rem;
+    }
+
+    .inputs input[type="number"]:focus,
+    .inputs input[type="text"]:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    }
+
+    .inputs input[type="range"] {
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+
+    .inputs .range-label {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .inputs button {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 0.6rem 1rem;
+      /* updated colours: white background, primary-coloured text and border */
+      background: #ffffff;
+      border: 2px solid var(--primary-color);
+      color: var(--primary-color);
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease-in-out, color 0.2s ease-in-out;
+    }
+
+    .inputs button:hover {
+      /* invert colours on hover */
+      background: var(--primary-color);
+      color: #ffffff;
+    }
+
+    .results .value {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-light);
+    }
+
+    .results canvas {
+      width: 100% !important;
+      max-height: 280px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .calculator-card {
+        flex-direction: column;
+      }
+    }
+  </style>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>FINSIDER 理財計算工具</h1>
+    <p>全面、直觀的理財工具，助你實現財務目標</p>
+  </header>
+  <main>
+    <!-- Retirement Calculator -->
+    <section id="retirement" class="calculator-section">
+      <h2>退休計算機</h2>
+      <p class="subtitle">預測退休儲蓄的未來價值</p>
+      <div class="calculator-card">
+        <div class="inputs">
+          <label for="ret-current-savings">現有資金 (港元)</label>
+          <input type="number" id="ret-current-savings" value="100000" min="0" />
+          <label for="ret-monthly-contribution">每月供款 (港元)</label>
+          <input type="number" id="ret-monthly-contribution" value="5000" min="0" />
+          <label for="ret-annual-rate">預期年回報率 (%)</label>
+          <input type="number" id="ret-annual-rate" value="5" min="0" step="0.1" />
+          <label for="ret-years">年數 (年)</label>
+          <input type="number" id="ret-years" value="20" min="1" />
+          <button onclick="calculateRetirement()">計算</button>
+        </div>
+        <div class="results">
+          <div id="retirement-summary" class="value">&nbsp;</div>
+          <canvas id="retirement-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- IRR Calculator -->
+    <section id="irr" class="calculator-section">
+      <h2>IRR 計算機</h2>
+      <p class="subtitle">計算內部回報率 (Internal Rate of Return)</p>
+      <div class="calculator-card">
+        <div class="inputs">
+          <label for="irr-cashflows">輸入現金流 (逗號分隔年份)</label>
+          <input type="text" id="irr-cashflows" placeholder="-100000, 20000, 30000, 40000, 50000" />
+          <button onclick="calculateIRR()">計算</button>
+        </div>
+        <div class="results">
+          <div id="irr-summary" class="value">&nbsp;</div>
+          <canvas id="irr-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Investment Growth Calculator -->
+    <section id="investment" class="calculator-section">
+      <h2>投資增長計算機</h2>
+      <p class="subtitle">預測投資的未來價值</p>
+      <div class="calculator-card">
+        <div class="inputs">
+          <label for="inv-initial">初始投資 (港元)</label>
+          <input type="number" id="inv-initial" value="1000" min="0" />
+          <label for="inv-monthly">每月投資 (港元)</label>
+          <input type="number" id="inv-monthly" value="100" min="0" />
+          <label>年限：<span id="inv-years-label">10</span> 年</label>
+          <input type="range" id="inv-years" min="1" max="40" value="10" onchange="updateInvLabels()" />
+          <label>年回報率：<span id="inv-rate-label">7</span>%</label>
+          <input type="range" id="inv-rate" min="1" max="15" value="7" onchange="updateInvLabels()" />
+          <button onclick="calculateInvestment()">計算</button>
+        </div>
+        <div class="results">
+          <div id="investment-summary" class="value">&nbsp;</div>
+          <canvas id="investment-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mortgage Loan Calculator -->
+    <section id="mortgage" class="calculator-section">
+      <h2>按揭貸款計算機</h2>
+      <p class="subtitle">計算房屋按揭的供款與利息</p>
+      <div class="calculator-card">
+        <div class="inputs">
+          <label for="mortgage-loan">貸款額 (港元)</label>
+          <input type="number" id="mortgage-loan" value="5000000" min="0" />
+          <label for="mortgage-rate">年利率 (%)</label>
+          <input type="number" id="mortgage-rate" value="3.5" min="0" step="0.1" />
+          <label for="mortgage-years">年期 (年)</label>
+          <input type="number" id="mortgage-years" value="30" min="1" />
+          <button onclick="calculateMortgage()">計算</button>
+        </div>
+        <div class="results">
+          <div id="mortgage-summary" class="value">&nbsp;</div>
+          <canvas id="mortgage-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Personal Loan Calculator -->
+    <section id="loan" class="calculator-section">
+      <h2>個人貸款計算機</h2>
+      <p class="subtitle">評估個人貸款的供款與利息</p>
+      <div class="calculator-card">
+        <div class="inputs">
+          <label for="loan-amount">貸款額 (港元)</label>
+          <input type="number" id="loan-amount" value="100000" min="0" />
+          <label for="loan-rate">年利率 (%)</label>
+          <input type="number" id="loan-rate" value="8" min="0" step="0.1" />
+          <label for="loan-years">年期 (年)</label>
+          <input type="number" id="loan-years" value="5" min="1" />
+          <button onclick="calculateLoan()">計算</button>
+        </div>
+        <div class="results">
+          <div id="loan-summary" class="value">&nbsp;</div>
+          <canvas id="loan-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Financial Freedom Calculator -->
+    <section id="freedom" class="calculator-section">
+      <h2>財務自由計算機</h2>
+      <p class="subtitle">估算實現財務自由所需的時間和目標儲蓄</p>
+      <div class="calculator-card">
+        <div class="inputs">
+          <label for="free-current-savings">現有儲蓄 (港元)</label>
+          <input type="number" id="free-current-savings" value="100000" min="0" />
+          <label for="free-monthly-invest">每月投資 (港元)</label>
+          <input type="number" id="free-monthly-invest" value="10000" min="0" />
+          <label for="free-annual-rate">預期年回報率 (%)</label>
+          <input type="number" id="free-annual-rate" value="6" min="0" step="0.1" />
+          <label for="free-monthly-expense">目標退休每月開支 (港元)</label>
+          <input type="number" id="free-monthly-expense" value="20000" min="0" />
+          <label for="free-safe-rate">安全提取率 (%)</label>
+          <input type="number" id="free-safe-rate" value="4" min="0" step="0.1" />
+          <button onclick="calculateFreedom()">計算</button>
+        </div>
+        <div class="results">
+          <div id="freedom-summary" class="value">&nbsp;</div>
+          <canvas id="freedom-chart"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Global chart references
+    let retirementChart, irrChart, investmentChart, mortgageChart, loanChart, freedomChart;
+
+    function formatCurrency(value) {
+      return value.toLocaleString('en-HK', { style: 'currency', currency: 'HKD', minimumFractionDigits: 2 });
+    }
+
+    function formatPercent(value) {
+      return (value * 100).toFixed(2) + '%';
+    }
+
+    // Retirement calculator
+    function calculateRetirement() {
+      const current = parseFloat(document.getElementById('ret-current-savings').value) || 0;
+      const monthly = parseFloat(document.getElementById('ret-monthly-contribution').value) || 0;
+      const annualRate = parseFloat(document.getElementById('ret-annual-rate').value) || 0;
+      const years = parseFloat(document.getElementById('ret-years').value) || 0;
+      const monthlyRate = annualRate / 100 / 12;
+      let savings = current;
+      const balances = [];
+      for (let year = 1; year <= years; year++) {
+        for (let month = 1; month <= 12; month++) {
+          savings = savings * (1 + monthlyRate) + monthly;
+        }
+        balances.push({ year: year, value: savings });
+      }
+      const finalAmount = balances.length > 0 ? balances[balances.length - 1].value : savings;
+      document.getElementById('retirement-summary').textContent = '預計退休儲蓄：' + formatCurrency(finalAmount);
+      // Prepare chart data
+      const labels = balances.map(b => b.year + '年');
+      const data = balances.map(b => b.value);
+      const ctx = document.getElementById('retirement-chart').getContext('2d');
+      if (retirementChart) retirementChart.destroy();
+      retirementChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '儲蓄總額 (港元)',
+            data: data,
+            fill: true,
+            tension: 0.3,
+            borderColor: '#a6f0d3',
+            backgroundColor: function(context) {
+              const chart = context.chart;
+              const { ctx, chartArea } = chart;
+              if (!chartArea) return null;
+              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+              gradient.addColorStop(0, 'rgba(166, 240, 211, 0.6)');
+              gradient.addColorStop(1, 'rgba(69, 211, 199, 0.2)');
+              return gradient;
+            },
+            pointRadius: 3
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              ticks: { color: '#fff', callback: function(value) { return 'HK$' + (value / 1000).toFixed(0) + 'K'; } },
+              grid: { color: 'rgba(255, 255, 255, 0.1)' }
+            },
+            x: {
+              ticks: { color: '#fff' },
+              grid: { color: 'rgba(255, 255, 255, 0.1)' }
+            }
+          },
+          plugins: {
+            legend: { labels: { color: '#fff' } }
+          }
+        }
+      });
+    }
+
+    // IRR calculator using Newton-Raphson
+    function calculateIRR() {
+      const cashflowStr = document.getElementById('irr-cashflows').value;
+      if (!cashflowStr) return;
+      const cashflows = cashflowStr.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+      if (cashflows.length < 2) {
+        document.getElementById('irr-summary').textContent = '請輸入有效的現金流。';
+        return;
+      }
+      const npv = (rate) => {
+        return cashflows.reduce((acc, cf, idx) => acc + cf / Math.pow(1 + rate, idx), 0);
+      };
+      const dNpv = (rate) => {
+        return cashflows.reduce((acc, cf, idx) => acc + -idx * cf / Math.pow(1 + rate, idx + 1), 0);
+      };
+      let rate = 0.1;
+      for (let i = 0; i < 100; i++) {
+        const f = npv(rate);
+        const fPrime = dNpv(rate);
+        const newRate = rate - f / fPrime;
+        if (Math.abs(newRate - rate) < 1e-7) {
+          rate = newRate;
+          break;
+        }
+        rate = newRate;
+      }
+      const irr = rate;
+      document.getElementById('irr-summary').textContent = '內部回報率：' + (irr * 100).toFixed(2) + '%';
+      // Draw bar chart of cashflows
+      const ctx = document.getElementById('irr-chart').getContext('2d');
+      if (irrChart) irrChart.destroy();
+      irrChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: cashflows.map((_, idx) => '年' + idx),
+          datasets: [{
+            label: '現金流 (港元)',
+            data: cashflows,
+            backgroundColor: cashflows.map(v => v >= 0 ? 'rgba(110, 255, 200, 0.6)' : 'rgba(255, 110, 110, 0.6)'),
+            borderColor: cashflows.map(v => v >= 0 ? 'rgba(110, 255, 200, 1)' : 'rgba(255, 110, 110, 1)'),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+            y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+          },
+          plugins: { legend: { labels: { color: '#fff' } } }
+        }
+      });
+    }
+
+    // Update labels for investment sliders
+    function updateInvLabels() {
+      const years = document.getElementById('inv-years').value;
+      const rate = document.getElementById('inv-rate').value;
+      document.getElementById('inv-years-label').textContent = years;
+      document.getElementById('inv-rate-label').textContent = rate;
+    }
+
+    // Investment growth calculator
+    function calculateInvestment() {
+      updateInvLabels();
+      const initial = parseFloat(document.getElementById('inv-initial').value) || 0;
+      const monthly = parseFloat(document.getElementById('inv-monthly').value) || 0;
+      const years = parseInt(document.getElementById('inv-years').value) || 1;
+      const annualRate = parseFloat(document.getElementById('inv-rate').value) || 0;
+      const monthlyRate = annualRate / 100 / 12;
+      let value = initial;
+      const balances = [];
+      for (let year = 1; year <= years; year++) {
+        for (let month = 1; month <= 12; month++) {
+          value = value * (1 + monthlyRate) + monthly;
+        }
+        balances.push({ year: year, value: value });
+      }
+      const finalValue = balances.length > 0 ? balances[balances.length - 1].value : value;
+      document.getElementById('investment-summary').textContent = '未來投資價值：' + formatCurrency(finalValue);
+      const labels = balances.map(b => b.year + '年');
+      const data = balances.map(b => b.value);
+      const ctx = document.getElementById('investment-chart').getContext('2d');
+      if (investmentChart) investmentChart.destroy();
+      investmentChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '投資價值 (港元)',
+            data: data,
+            fill: true,
+            tension: 0.3,
+            borderColor: '#c5e5f4',
+            backgroundColor: function(context) {
+              const chart = context.chart;
+              const { ctx, chartArea } = chart;
+              if (!chartArea) return null;
+              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+              gradient.addColorStop(0, 'rgba(197, 229, 244, 0.6)');
+              gradient.addColorStop(1, 'rgba(46, 179, 156, 0.2)');
+              return gradient;
+            },
+            pointRadius: 3
+          }]
+        },
+        options: {
+          scales: {
+            y: { ticks: { color: '#fff', callback: function(value){ return 'HK$' + (value/1000).toFixed(0) + 'K'; } }, grid: { color: 'rgba(255,255,255,0.1)' } },
+            x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+          },
+          plugins: { legend: { labels: { color: '#fff' } } }
+        }
+      });
+    }
+
+    // Mortgage calculator
+    function calculateMortgage() {
+      const loan = parseFloat(document.getElementById('mortgage-loan').value) || 0;
+      const rate = parseFloat(document.getElementById('mortgage-rate').value) || 0;
+      const years = parseInt(document.getElementById('mortgage-years').value) || 0;
+      const monthlyRate = rate / 100 / 12;
+      const n = years * 12;
+      const monthlyPayment = (loan * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -n));
+      const totalPayment = monthlyPayment * n;
+      const totalInterest = totalPayment - loan;
+      document.getElementById('mortgage-summary').innerHTML =
+        '每月供款：' + formatCurrency(monthlyPayment) + '<br>' +
+        '全期總付款：' + formatCurrency(totalPayment) + '<br>' +
+        '全期利息：' + formatCurrency(totalInterest);
+      const ctx = document.getElementById('mortgage-chart').getContext('2d');
+      if (mortgageChart) mortgageChart.destroy();
+      mortgageChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['本金', '利息'],
+          datasets: [{
+            data: [loan, totalInterest],
+            backgroundColor: ['rgba(110,255,200,0.6)', 'rgba(255,110,110,0.6)'],
+            borderColor: ['rgba(110,255,200,1)', 'rgba(255,110,110,1)'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { labels: { color: '#fff' } }
+          }
+        }
+      });
+    }
+
+    // Personal loan calculator
+    function calculateLoan() {
+      const loanAmt = parseFloat(document.getElementById('loan-amount').value) || 0;
+      const rate = parseFloat(document.getElementById('loan-rate').value) || 0;
+      const years = parseInt(document.getElementById('loan-years').value) || 0;
+      const monthlyRate = rate / 100 / 12;
+      const n = years * 12;
+      const monthlyPayment = (loanAmt * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -n));
+      const totalPayment = monthlyPayment * n;
+      const totalInterest = totalPayment - loanAmt;
+      document.getElementById('loan-summary').innerHTML =
+        '每月供款：' + formatCurrency(monthlyPayment) + '<br>' +
+        '總付款：' + formatCurrency(totalPayment) + '<br>' +
+        '總利息：' + formatCurrency(totalInterest);
+      const ctx = document.getElementById('loan-chart').getContext('2d');
+      if (loanChart) loanChart.destroy();
+      loanChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['本金', '利息'],
+          datasets: [{ data: [loanAmt, totalInterest], backgroundColor: ['rgba(255,215,128,0.6)', 'rgba(128,160,255,0.6)'], borderColor: ['rgba(255,215,128,1)', 'rgba(128,160,255,1)'], borderWidth: 1 }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: '#fff' } } }
+        }
+      });
+    }
+
+    // Financial freedom calculator
+    function calculateFreedom() {
+      const current = parseFloat(document.getElementById('free-current-savings').value) || 0;
+      const monthlyInvest = parseFloat(document.getElementById('free-monthly-invest').value) || 0;
+      const annualRate = parseFloat(document.getElementById('free-annual-rate').value) || 0;
+      const monthlyExpense = parseFloat(document.getElementById('free-monthly-expense').value) || 0;
+      const safeRate = parseFloat(document.getElementById('free-safe-rate').value) || 0;
+      if (safeRate === 0) {
+        document.getElementById('freedom-summary').textContent = '安全提取率不能為 0';
+        return;
+      }
+      const target = (monthlyExpense * 12) / (safeRate / 100);
+      const monthlyRate = annualRate / 100 / 12;
+      let savings = current;
+      let months = 0;
+      const balances = [];
+      while (savings < target && months < 1200) { // Limit to 100 years (1200 months)
+        savings = savings * (1 + monthlyRate) + monthlyInvest;
+        months++;
+        // Record yearly balances
+        if (months % 12 === 0) {
+          balances.push({ year: months / 12, value: savings });
+        }
+      }
+      const yearsNeeded = months / 12;
+      if (savings < target) {
+        document.getElementById('freedom-summary').textContent = '目標難以在可接受的時間內達成';
+      } else {
+        document.getElementById('freedom-summary').textContent = '預計需要約 ' + yearsNeeded.toFixed(1) + ' 年才能退休 (目標儲蓄：' + formatCurrency(target) + ')';
+      }
+      // Chart
+      const labels = balances.map(b => b.year + '年');
+      const data = balances.map(b => b.value);
+      const ctx = document.getElementById('freedom-chart').getContext('2d');
+      if (freedomChart) freedomChart.destroy();
+      freedomChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '儲蓄 (港元)',
+            data: data,
+            fill: true,
+            tension: 0.3,
+            borderColor: '#ffe799',
+            backgroundColor: function(context) {
+              const chart = context.chart;
+              const { ctx, chartArea } = chart;
+              if (!chartArea) return null;
+              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+              gradient.addColorStop(0, 'rgba(255, 231, 153, 0.6)');
+              gradient.addColorStop(1, 'rgba(46, 179, 156, 0.2)');
+              return gradient;
+            },
+            pointRadius: 3
+          }]
+        },
+        options: {
+          scales: {
+            y: { ticks: { color: '#fff', callback: function(value){ return 'HK$' + (value/1000).toFixed(0) + 'K'; } }, grid: { color: 'rgba(255,255,255,0.1)' } },
+            x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+          },
+          plugins: { legend: { labels: { color: '#fff' } } }
+        }
+      });
+    }
+
+    // Initialize investment labels on load
+    window.addEventListener('DOMContentLoaded', () => {
+      updateInvLabels();
+      calculateRetirement();
+      calculateInvestment();
+      calculateMortgage();
+      calculateLoan();
+      calculateFreedom();
+    });
+  </script>
+</body>
+</html>
